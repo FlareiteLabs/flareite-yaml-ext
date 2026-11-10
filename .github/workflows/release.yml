@@ -1,0 +1,74 @@
+# Publishes the extension when a version tag is pushed (git tag v1.2.3 &&
+# git push origin v1.2.3): builds it, packs it as extension.zip, and attaches
+# that to a GitHub release, which Flareite installs from (Extensions: Install
+# Extension from GitHub…, or the Official Extensions in the Extensions view).
+# The tag's major.minor.patch must match the version in extension.toml. A tag
+# with a prerelease after it (v1.3.0-alpha.1) is published as a prerelease of
+# that version, with the manifest unchanged; Flareite installs prereleases
+# only when chosen, and offers the release they lead to as an update.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: extension
+      # Extensions with code build against the extension API in the editor's
+      # repository, which they expect beside them as `editor`.
+      - uses: actions/checkout@v4
+        if: hashFiles('extension/Cargo.toml') != ''
+        with:
+          repository: FlareiteLabs/flareite
+          ref: main
+          path: editor
+      - uses: dtolnay/rust-toolchain@stable
+        if: hashFiles('extension/Cargo.toml') != ''
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Package
+        working-directory: extension
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/^version = "\(.*\)"$/\1/p' extension.toml | head -n 1)
+          tag="${GITHUB_REF_NAME#v}"
+          # v1.3.0-alpha.1 releases 1.3.0's code as a prerelease.
+          if [ "${tag%%[-+]*}" != "$version" ]; then
+            echo "::error::The tag $GITHUB_REF_NAME must be v$version, or a prerelease of it (v$version-alpha.1), to match extension.toml."
+            exit 1
+          fi
+          package="$RUNNER_TEMP/package"
+          mkdir -p "$package"
+          # The extension's files, without what only building it needs.
+          git archive HEAD | tar -x -C "$package"
+          rm -rf "$package"/{.github,.cargo,src,Cargo.toml,Cargo.lock,rustfmt.toml,.editorconfig,.gitattributes,.gitignore}
+          if [ -f Cargo.toml ]; then
+            cargo build --release --locked
+            entrypoint=$(sed -n 's/^entrypoint = "\(.*\)"$/\1/p' extension.toml)
+            wasm=$(basename "$entrypoint")
+            cp "$entrypoint" "$package/$wasm"
+            # Installed extensions keep the module beside the manifest.
+            sed -i "s|^entrypoint = .*|entrypoint = \"$wasm\"|" "$package/extension.toml"
+          fi
+          (cd "$package" && zip -r -X -q "$RUNNER_TEMP/extension.zip" .)
+          unzip -l "$RUNNER_TEMP/extension.zip"
+      - name: Publish
+        working-directory: extension
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          prerelease=()
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            prerelease=(--prerelease)
+          fi
+          gh release create "$GITHUB_REF_NAME" "$RUNNER_TEMP/extension.zip" \
+            --title "$GITHUB_REF_NAME" --generate-notes --verify-tag "${prerelease[@]}"

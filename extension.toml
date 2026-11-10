@@ -1,0 +1,27 @@
+# YAML: highlighting from a Tree-sitter grammar compiled to WebAssembly. No
+# code. Flareite checks YAML files against JSON Schemas itself, as it does
+# TOML and JSON files, and completes and describes their keys and values:
+# SchemaStore's for well-known files (GitHub workflows, Compose files, and
+# so on), the one a file names (# yaml-language-server: $schema=<address>),
+# and those [[schemas.associations]] and extensions provide. See Flareite's
+# docs/extensions.md#languages.
+id = "flareite.yaml"
+name = "YAML"
+version = "0.1.0"
+description = "YAML highlighting. Flareite checks YAML files against schemas and completes their keys."
+author = "Flareite"
+api_version = "1"
+
+[engines]
+flareite = ">=0.1.0"
+
+[[languages]]
+id = "yaml"
+name = "YAML"
+file_extensions = ["yaml", "yml"]
+# Tools' configuration files that are YAML without saying so.
+file_names = [".clang-format", ".clang-tidy", ".clangd"]
+grammar = "grammars/tree-sitter-yaml.wasm"
+highlights = "queries/highlights.scm"
+folds = "queries/folds.scm"
+line_comment = "#"
