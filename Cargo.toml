@@ -1,0 +1,30 @@
+[package]
+name = "flareite-yaml"
+description = "YAML for Flareite: documents parsed for schemas, and their keys and values completed and described."
+version = "0.2.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# The editor's repository, checked out beside this one.
+flareite-extension-api = { path = "../editor/crates/flareite-extension-api" }
+flareite-extension-schemas = { path = "../editor/crates/flareite-extension-schemas" }
+# YAML documents, parsed with where each value is.
+saphyr-parser = "0.3.3"
+serde_json = "1.0.145"
+
+[dev-dependencies]
+# Flareite's schema engine, natively, for the tests.
+flareite-extension-schemas = { path = "../editor/crates/flareite-extension-schemas", features = [
+  "testing",
+] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true

@@ -1,19 +1,30 @@
-# YAML: highlighting from a Tree-sitter grammar compiled to WebAssembly. No
-# code. Flareite checks YAML files against JSON Schemas itself, as it does
-# TOML and JSON files, and completes and describes their keys and values:
-# SchemaStore's for well-known files (GitHub workflows, Compose files, and
-# so on), the one a file names (# yaml-language-server: $schema=<address>),
-# and those [[schemas.associations]] and extensions provide. See Flareite's
-# docs/extensions.md#languages.
+# YAML: highlighting from a Tree-sitter grammar compiled to WebAssembly, and
+# YAML streams parsed for Flareite's schemas, which check each of their
+# documents: SchemaStore's for well-known files (GitHub workflows, Compose
+# files, and so on), the one a file names (# yaml-language-server:
+# $schema=<address>), and those [[schemas.associations]] and extensions
+# provide. Their keys and values are completed and described from what the
+# schemas say. See Flareite's docs/extensions.md#languages and #schemas.
 id = "flareite.yaml"
 name = "YAML"
-version = "0.1.0"
-description = "YAML highlighting. Flareite checks YAML files against schemas and completes their keys."
+version = "0.2.0"
+description = "YAML highlighting, and checking, completion, and hover from schemas."
 author = "Flareite"
 api_version = "1"
+entrypoint = "target/wasm32-unknown-unknown/release/flareite_yaml.wasm"
+activation = ["on-language:yaml"]
 
 [engines]
 flareite = ">=0.1.0"
+
+# documents_read: reading YAML documents, to parse them for schemas.
+[permissions]
+documents_read = true
+
+[build]
+command = "cargo"
+args = ["build", "--release"]
+watch = ["src", "Cargo.toml"]
 
 [[languages]]
 id = "yaml"
@@ -25,3 +36,22 @@ grammar = "grammars/tree-sitter-yaml.wasm"
 highlights = "queries/highlights.scm"
 folds = "queries/folds.scm"
 line_comment = "#"
+
+[[commands]]
+id = "flareite.yaml.complete"
+title = "Complete from Schemas"
+hidden = true
+
+[[commands]]
+id = "flareite.yaml.hover"
+title = "Describe from Schemas"
+hidden = true
+
+[[completion_providers]]
+languages = ["yaml"]
+command = "flareite.yaml.complete"
+trigger_characters = [":", " "]
+
+[[hover_providers]]
+languages = ["yaml"]
+command = "flareite.yaml.hover"
