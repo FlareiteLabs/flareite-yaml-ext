@@ -5,12 +5,10 @@
 mod parse;
 mod place;
 
-use std::sync::Mutex;
-
-use flareite_extension_api::types::{
-  Activation, CommandContext, DocumentChange, DocumentId, DocumentInfo,
-};
-use flareite_extension_api::{Guest, export_extension};
+use flareite_extension_api::events::Event;
+use flareite_extension_api::language_features::{CompletionItem, CompletionRequest, HoverRequest};
+use flareite_extension_api::types::Activation;
+use flareite_extension_api::{Extension, register};
 use flareite_extension_schemas::document::{Document, Segment};
 use flareite_extension_schemas::{Documents, Header, Language, Place, Property, Shape};
 use serde_json::Value as Json;
@@ -96,42 +94,32 @@ impl Language for Yaml {
   }
 }
 
-static DOCUMENTS: Mutex<Option<Documents<Yaml>>> = Mutex::new(None);
+/// The extension: its open documents, checked against their schemas.
+struct YamlExtension(Documents<Yaml>);
 
-fn with_documents<T>(f: impl FnOnce(&mut Documents<Yaml>) -> T) -> T {
-  let mut documents = DOCUMENTS
-    .lock()
-    .unwrap_or_else(std::sync::PoisonError::into_inner);
-  f(documents.get_or_insert_with(|| Documents::new(Yaml)))
-}
+impl Extension for YamlExtension {
+  fn activate(_: Activation) -> Result<Self, String> {
+    Ok(Self(Documents::new(Yaml)))
+  }
 
-struct Extension;
-
-impl Guest for Extension {
-  fn activate(_context: Activation) -> Result<(), String> {
+  fn handle_event(&mut self, event: Event) -> Result<(), String> {
+    self.0.handle_event(event);
     Ok(())
   }
 
-  fn deactivate() {}
-
-  fn run_command(_command: String, _context: CommandContext) -> Result<(), String> {
-    with_documents(Documents::run_command).map(|_| ())
+  fn provide_completions(
+    &mut self,
+    request: CompletionRequest,
+  ) -> Result<Vec<CompletionItem>, String> {
+    Ok(self.0.completions(request.document, request.position))
   }
 
-  fn document_opened(document: DocumentInfo) {
-    with_documents(|documents| documents.opened(document));
-  }
-
-  fn document_changed(change: DocumentChange) {
-    with_documents(|documents| documents.changed(change));
-  }
-
-  fn document_closed(document: DocumentId) {
-    with_documents(|documents| documents.closed(document));
+  fn provide_hover(&mut self, request: HoverRequest) -> Result<Option<String>, String> {
+    Ok(self.0.hover(request.document, request.position))
   }
 }
 
-export_extension!(Extension);
+register!(YamlExtension);
 
 #[cfg(test)]
 mod tests {

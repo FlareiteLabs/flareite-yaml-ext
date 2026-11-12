@@ -149,14 +149,14 @@ dependencies = [
 
 [[package]]
 name = "flareite-extension-api"
-version = "1.0.0"
+version = "2.0.0"
 dependencies = [
  "wit-bindgen 0.63.0",
 ]
 
 [[package]]
 name = "flareite-extension-schemas"
-version = "1.0.0"
+version = "2.0.0"
 dependencies = [
  "flareite-extension-api",
  "flareite-schema",
@@ -188,7 +188,7 @@ dependencies = [
 
 [[package]]
 name = "flareite-yaml"
-version = "0.2.0"
+version = "1.0.0"
 dependencies = [
  "flareite-extension-api",
  "flareite-extension-schemas",
