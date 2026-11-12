@@ -7,7 +7,7 @@
 # schemas say. See Flareite's docs/extensions.md#languages and #schemas.
 id = "flareite.yaml"
 name = "YAML"
-version = "0.2.0"
+version = "0.3.0"
 description = "YAML highlighting, and checking, completion, and hover from schemas."
 author = "Flareite"
 api_version = "1"
@@ -36,6 +36,56 @@ grammar = "grammars/tree-sitter-yaml.wasm"
 highlights = "queries/highlights.scm"
 folds = "queries/folds.scm"
 line_comment = "#"
+# Brackets and quotes typed in pairs, as in VS Code's language configuration.
+brackets = [["{", "}"], ["[", "]"]]
+auto_closing_pairs = [
+  [
+    "{",
+    "}",
+  ],
+  [
+    "[",
+    "]",
+  ],
+  [
+    "(",
+    ")",
+  ],
+  { open = '"', close = '"', not_in = [
+    "string",
+    "comment",
+  ] },
+  { open = "'", close = "'", not_in = [
+    "string",
+    "comment",
+  ] },
+]
+surrounding_pairs = [
+  [
+    "{",
+    "}",
+  ],
+  [
+    "[",
+    "]",
+  ],
+  [
+    "(",
+    ")",
+  ],
+  [
+    '"',
+    '"',
+  ],
+  [
+    "'",
+    "'",
+  ],
+  [
+    "`",
+    "`",
+  ],
+]
 
 [[commands]]
 id = "flareite.yaml.complete"
