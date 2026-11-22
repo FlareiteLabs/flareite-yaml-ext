@@ -10,6 +10,7 @@ name = "YAML"
 version = "1.0.0"
 description = "YAML highlighting, and checking, completion, and hover from schemas."
 author = "Flareite"
+icon = "icon.svg"
 api_version = "2"
 entrypoint = "target/wasm32-unknown-unknown/release/flareite_yaml.wasm"
 activation = ["on-language:yaml"]
